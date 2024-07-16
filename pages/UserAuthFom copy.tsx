@@ -19,30 +19,10 @@ import { IoEyeSharp } from "react-icons/io5";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from "@/components/ui/form";
 
 interface UserAuthFomProps {
     type: string;
 }
-
-const FormSchema = z.object({
-    fullname: z.string().min(2, {
-        message: "Username must be at least 2 characters.",
-    }),
-    email: z.string().min(2, {
-        message: "Username must be at least 3 characters.",
-    }),
-    password: z.string().min(2, {
-        message: "Username must be at least 3 characters.",
-    }),
-});
 
 const UserAuthFom: React.FC<UserAuthFomProps> = ({ type }) => {
     const { toast } = useToast();
@@ -53,17 +33,8 @@ const UserAuthFom: React.FC<UserAuthFomProps> = ({ type }) => {
         setEyeOpen(!eyeOpen);
     }
 
-    // const form = useForm<z.infer<typeof SignupValidation>>({
-    //     resolver: zodResolver(SignupValidation),
-    //     defaultValues: {
-    //         fullname: "",
-    //         email: "",
-    //         password: "",
-    //     },
-    // });
-
-    const form = useForm<z.infer<typeof FormSchema>>({
-        resolver: zodResolver(FormSchema),
+    const form = useForm<z.infer<typeof SignupValidation>>({
+        resolver: zodResolver(SignupValidation),
         defaultValues: {
             fullname: "",
             email: "",
@@ -71,59 +42,77 @@ const UserAuthFom: React.FC<UserAuthFomProps> = ({ type }) => {
         },
     });
 
-    function onSubmit(data: z.infer<typeof FormSchema>) {
-        toast({
-            title: "You submitted the following values:",
-            description: (
-                <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-                    <code className="text-white">
-                        {JSON.stringify(data, null, 2)}
-                    </code>
-                </pre>
-            ),
-        });
-    }
+    const authForm = useRef<HTMLFormElement>(null);
 
+    const handleSignUp = async (values: z.infer<typeof SignupValidation>) => {
+        toast({
+            title: "Sign Up Successfully",
+            description: new Date().toDateString(),
+        });
+    };
+
+    const handleSignIn = () => {
+        toast({
+            title: "Sign In Successfully",
+            description: new Date().toDateString(),
+        });
+        router.push("/");
+    };
+
+    // const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    //     e.preventDefault(); // Prevent the default form submission behavior
+
+    //     if (authForm.current) {
+    //         const form = new FormData(authForm.current);
+    //         let formData: { [key: string]: FormDataEntryValue } = {};
+
+    //         for (const [key, value] of form.entries()) {
+    //             formData[key] = value;
+    //         }
+
+    //         console.log(formData);
+    //     }
+    // };
+
+    const FormDataSchema = z.object({
+        fullname: z
+            .string()
+            .min(3, "Fullname must be at least 3 characters long!"),
+        email: z.string().email("Email is invalid!"),
+        password: z
+            .string()
+            .regex(
+                /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/,
+                "Password should be 6 to 20 characters long with a numeric, 1 lowercase and 1 uppercase letter!"
+            ),
+    });
+
+    type FormData = z.infer<typeof FormDataSchema>;
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+
+        if (authForm.current) {
+            const formData = Object.fromEntries(new FormData(authForm.current));
+
+            const parsedFormData = FormDataSchema.safeParse(formData);
+
+            if (!parsedFormData.success) {
+                console.log(parsedFormData.error.flatten());
+                return;
+            }
+
+            const { fullname, email, password } = parsedFormData.data;
+
+            // Proceed with form submission or further processing
+        }
+    };
     return (
         <AnimationWrapper type="down" key="">
             <section className=" h-cover app-center">
-                <Form {...form}>
-                    <form
-                        // onSubmit={form.handleSubmit(onSubmit)}
-                        className="w-[80%] max-w-[400px] flex flex-col gap-10"
-                    >
-                        <h1 className="text-4xl font-gelasio capitalize text-center">
-                            {type === "sign-in"
-                                ? "Welcome back"
-                                : "Join us today"}
-                        </h1>
-                        <FormField
-                            control={form.control}
-                            name="fullname"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Fullname</FormLabel>
-                                    <FormControl className="relative">
-                                        <Input
-                                            className="pl-10"
-                                            placeholder="Full Name"
-                                            {...field}
-                                        />
-                                        <FiUser className="absolute left-3 top-[50%] translate-y-[-50%] w-5 h-5 text-gray-500" />
-                                    </FormControl>
-                                    <FormDescription>
-                                        This is your public display name.
-                                    </FormDescription>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <Button type="submit">Submit</Button>
-                    </form>
-                </Form>
                 <form
-                    // onSubmit={handleSubmit}
-                    // ref={authForm}
+                    onSubmit={handleSubmit}
+                    ref={authForm}
                     className="w-[80%] max-w-[400px] flex flex-col gap-10"
                 >
                     <h1 className="text-4xl font-gelasio capitalize text-center">
